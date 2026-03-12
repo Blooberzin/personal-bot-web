@@ -46,8 +46,13 @@ export default function Classes() {
   }
 
   useEffect(() => {
-    loadData()
-  }, [])
+  loadData()
+  
+  // Atualiza a cada 10 segundos automaticamente
+  const interval = setInterval(loadData, 10000)
+  
+  return () => clearInterval(interval)
+}, [])
 
   function formatDate(date: string) {
     return new Date(date).toLocaleString('pt-BR', {
