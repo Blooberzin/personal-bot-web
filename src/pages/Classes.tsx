@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import api from '../services/api'
+import Toast from '../components/Toast'
 
 interface Student {
   id: string
@@ -14,11 +15,21 @@ interface Class {
   student: Student
 }
 
+interface ToastState {
+  message: string
+  type: 'success' | 'error'
+}
+
 export default function Classes() {
   const [classes, setClasses] = useState<Class[]>([])
   const [students, setStudents] = useState<Student[]>([])
   const [studentId, setStudentId] = useState('')
   const [scheduledAt, setScheduledAt] = useState('')
+  const [toast, setToast] = useState<ToastState | null>(null)
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ message, type })
+  }
 
   async function loadData() {
     const [classesRes, studentsRes] = await Promise.all([
@@ -38,21 +49,25 @@ export default function Classes() {
     setStudentId('')
     setScheduledAt('')
     loadData()
+    showToast('Aula agendada com sucesso!', 'success')
   }
 
   async function handleDelete(id: string) {
     await api.delete(`/classes/${id}`)
     loadData()
+    showToast('Aula removida com sucesso!', 'success')
+  }
+
+  async function handleResendReminder(id: string) {
+    await api.post(`/classes/${id}/reminder`)
+    showToast('Lembrete reenviado!', 'success')
   }
 
   useEffect(() => {
-  loadData()
-  
-  // Atualiza a cada 10 segundos automaticamente
-  const interval = setInterval(loadData, 10000)
-  
-  return () => clearInterval(interval)
-}, [])
+    loadData()
+    const interval = setInterval(loadData, 10000)
+    return () => clearInterval(interval)
+  }, [])
 
   function formatDate(date: string) {
     return new Date(date).toLocaleString('pt-BR', {
@@ -119,15 +134,33 @@ export default function Classes() {
                 {statusLabel(cls.status)}
               </p>
             </div>
-            <button
-              className="text-red-500 hover:text-red-700 text-sm"
-              onClick={() => handleDelete(cls.id)}
-            >
-              Remover
-            </button>
+            <div className="flex gap-3 items-center">
+              {cls.status === 'pending' && (
+                <button
+                  className="text-blue-500 hover:text-blue-700 text-sm"
+                  onClick={() => handleResendReminder(cls.id)}
+                >
+                  Reenviar
+                </button>
+              )}
+              <button
+                className="text-red-500 hover:text-red-700 text-sm"
+                onClick={() => handleDelete(cls.id)}
+              >
+                Remover
+              </button>
+            </div>
           </div>
         ))}
       </div>
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   )
 }

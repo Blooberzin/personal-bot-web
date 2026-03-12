@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import api from '../services/api'
+import Toast from '../components/Toast'
 
 interface Student {
   id: string
@@ -8,10 +9,20 @@ interface Student {
   active: boolean
 }
 
+interface ToastState {
+  message: string
+  type: 'success' | 'error'
+}
+
 export default function Students() {
   const [students, setStudents] = useState<Student[]>([])
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
+  const [toast, setToast] = useState<ToastState | null>(null)
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ message, type })
+  }
 
   async function loadStudents() {
     const response = await api.get('/students')
@@ -24,11 +35,13 @@ export default function Students() {
     setName('')
     setPhone('')
     loadStudents()
+    showToast('Aluno cadastrado com sucesso!', 'success')
   }
 
   async function handleDelete(id: string) {
     await api.delete(`/students/${id}`)
     loadStudents()
+    showToast('Aluno removido com sucesso!', 'success')
   }
 
   useEffect(() => {
@@ -79,6 +92,14 @@ export default function Students() {
           </div>
         ))}
       </div>
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   )
 }
